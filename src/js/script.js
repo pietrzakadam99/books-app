@@ -1,100 +1,111 @@
 {
   'use strict';
-  
+
   const select = {
-    booksTemplate: '#template-book',
-    booksList: '.books-list',
-    form: '.filters',
-    image: '.book__image',
-    favorite: '.favorite',
+    templateOf: {
+      templateBook: '#template-book',
+    },
+    containerOf: {
+      bookList: '.books-list',
+      filters: '.filters'
+    },
+    book: {
+      image: 'book__image',
+    }
+  };
+  const classNames = {
+    favoriteBook: 'favorite',
     hidden: 'hidden',
   };
-    
   const templates = {
-    booksTemplate: Handlebars.compile(document.querySelector(select.booksTemplate).innerHTML),
+    bookTemplate: Handlebars.compile(document.querySelector(select.templateOf.templateBook).innerHTML),
   };
   
   class BooksList{
     constructor(){
-      const thisBookList = this;
-
-      thisBookList.initData();
-      thisBookList.getElements();
-      thisBookList.render();
-      thisBookList.initActions();
-    }
-
-    getElements(){
       const thisBooksList = this;
 
-      thisBooksList.booksContainer = document.querySelector(select.booksList);
-      thisBooksList.filteredBooks = document.querySelector(select.form);
-    
-      thisBooksList.favoriteBooks = [];
-      thisBooksList.filters = [];
+      thisBooksList.initData();
+      thisBooksList.getElements();
+      thisBooksList.render();
+      thisBooksList.initActions();
+      thisBooksList.determineRatingBgc();
     }
 
     initData(){
       const thisBooksList = this;
       thisBooksList.data = dataSource.books;
     }
+
+    getElements(){
+      const thisBooksList = this;
+
+      thisBooksList.listContainer = document.querySelector(select.containerOf.bookList);
+      thisBooksList.filtersWrapper = document.querySelector(select.containerOf.filters);
+    
+      thisBooksList.favoriteBooks = [];
+      thisBooksList.filters = [];
+    }
   
     render(){
       const thisBooksList = this;
 
-      for(let books of thisBooksList.data){
+      for(let book of thisBooksList.data){
       
-        books.ratingBgc = thisBooksList.determineRatingBgc(books.rating);
-        books.ratingWidth = books.rating * 10;
-      
-      
-        // wygenerowanie kodu HTML na podstawie szablonu oraz danych książki
-        const generatedHTML = templates.booksTemplate(books);
-        // wygenerowanie elementu DOM na podstawie HTML
+        const ratingBgc = thisBooksList.determineRatingBgc(book.rating);
+        const ratingWidth = book.rating * 10;
+        const generatedHTML = templates.bookTemplate({
+          id: book.id,
+          price: book.price,
+          name: book.name,
+          image: book.image,
+          rating: book.rating,
+          ratingBgc,
+          ratingWidth
+        });
         const element = utils.createDOMFromHTML(generatedHTML);
-        // znaleźć kontener
-        const booksContainer = document.querySelector(select.booksList);
-        // dodać element 
-        booksContainer.appendChild(element);
+        thisBooksList.listContainer.appendChild(element);
       }
     }
 
     initActions(){
       const thisBooksList = this;
     
-      thisBooksList.booksContainer.addEventListener('dblclick', function(event){
+      thisBooksList.listContainer.addEventListener('dblclick', function(event){
       // zatrzymanie domyślnej akcji
         event.preventDefault(); 
         // zwraca referencje który jest najbliżej kliknięty 
         const bookCover = event.target.offsetParent;
         // pobranie atrybutu
-        if(!bookCover.classList.contains('favorite')){ 
+        if(bookCover.classList.contains(select.book.image)){ 
           const id = bookCover.getAttribute('data-id');
 
       
-          if (bookCover.includes(id)){
-            const indexBooks = bookCover.indexOf(id);
-            bookCover.classList.remove('favorite');
-            thisBooksList.favoriteBooks.splice(indexBooks, 1);
-          }else{
-            bookCover.classList.add('favorite');
-            bookCover.push(id);
+          if (!bookCover.classList.contains(classNames.favoriteBook)){
+            thisBooksList.favoriteBooks.push(id);
+            bookCover.classList.add(classNames.favoriteBook);
+          }
+          else {
+            thisBooksList.favoriteBooks.splice(thisBooksList.favoriteBooks.indexOf(id), 1);
+            bookCover.classList.remove(classNames.favoriteBook);
           }
         }
       });
-      thisBooksList.filteredBooks.addEventListener('change', function(event){
+      thisBooksList.filtersWrapper.addEventListener('change', function(event){
         event.preventDefault();
 
         const clickedElem = event.target;
 
-        if(clickedElem.type === 'checkbox'){
+        if(clickedElem.name === 'filter'){
           if(clickedElem.checked){
             thisBooksList.filters.push(clickedElem.value);
-          }else{
+          }
+          else { 
             const filterIndex = thisBooksList.filters.indexOf(clickedElem.value);
-            thisBooksList.filters.splice(filterIndex, 1);
+            thisBooksList.filters.splice(thisBooksList.filters.indexOf(filterIndex), 1);
           }
         }
+        thisBooksList.filterBooks();
       });
     }
 
@@ -109,13 +120,12 @@
             break;
           }
         }
+        const bookCover = document.querySelector('.book__image[data-id="' + book.id + '"]');
         if(shouldBeHidden){
-          const bookCover = document.querySelector('.book__image[data-id="' + book.id + '"]');
-          console.log('bookCover:', bookCover);
+          // console.log('bookCover:', bookCover);
           bookCover.classList.add('hidden');
         }
         else{
-          const bookCover = document.querySelector('.book__image[data-id="' + book.id + '"]');
           bookCover.classList.remove('hidden');
         }
       }
@@ -126,11 +136,14 @@
 
       if(rating<6){
         background = 'linear-gradient(to bottom,  #fefcea 0%, #f1da36 100%);';
-      }else if(rating >6 && rating<=8){
+      }
+      if(rating >6 && rating<=8){
         background = 'linear-gradient(to bottom, #b4df5b 0%,#b4df5b 100%);';
-      }else if(rating>8 && rating<=9){
+      }
+      if(rating>8 && rating<=9){
         background = 'linear-gradient(to bottom, #299a0b 0%, #299a0b 100%);';
-      }else if(rating>9){
+      }
+      if(rating>9){
         background = 'linear-gradient(to bottom, #ff0084 0%,#ff0084 100%);';
       }
       return background;
@@ -138,6 +151,10 @@
   }
   
 
-  const app = new BooksList();
-  app();
+  const app = {
+    initProject: function(){
+      new BooksList();
+    }
+  };
+  app.initProject();
 }
