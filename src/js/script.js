@@ -55,7 +55,7 @@
 
       for(let book of thisBooksList.data){
       
-        // stałą równa temu co zwraca funkcja 
+        // stałą równa temu co zwraca funkcja dla rating danej ksiazki
         const ratingBgc = thisBooksList.determineRatingBgc(book.rating);
         // ustala długośc paska (np 5 to 50%)
         const ratingWidth = book.rating * 10;
@@ -88,15 +88,16 @@
           // pobranie id książki 
           const id = bookCover.getAttribute('data-id');
 
-          // sprawdzenie czy favoriteBook ma id zapisane w data-id, jeżeli nie dodać klasę 
+          // sprawdzenie czy favoriteBook ma id zapisane w data-id, jeżeli nie dodać klasę (sprawdza czy jest w ulubionych)
           if (!bookCover.classList.contains(classNames.favoriteBook)){
             thisBooksList.favoriteBooks.push(id);
             // dodanie klasy favorite 
             bookCover.classList.add(classNames.favoriteBook);
           }
           else {
-            // 
+            // zwraca usunięte elementy, te "polubione"
             thisBooksList.favoriteBooks.splice(thisBooksList.favoriteBooks.indexOf(id), 1);
+            // usunięcie klasy favorite 
             bookCover.classList.remove(classNames.favoriteBook);
           }
         }
